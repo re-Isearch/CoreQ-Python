@@ -26,6 +26,42 @@ The extension and engine component libraries are installed inside the Python
 package. GNU dbm remains a required platform library. Public wheel distribution
 will also require platform-specific dependency repair.
 
+### Build directly with CMake
+
+Use the same Python interpreter for configuration and for running your scripts.
+For example, activate your Python environment and run from the repository root:
+
+```sh
+python -m pip install nanobind
+cmake -S . -B build \
+  -DCOREQUARRY_IB_SOURCE_DIR=/path/to/ib \
+  -DPython_EXECUTABLE="$(python -c 'import sys; print(sys.executable)')" \
+  -Dnanobind_DIR="$(python -m nanobind --cmake_dir)"
+cmake --build build --parallel 2
+(cd build && python -c 'import corequarry as cq; print(cq.__version__)')
+```
+
+The build creates `build/corequarry/` containing `__init__.py`, the `_core`
+extension and the type stubs. A script such as `build/test.py` can therefore
+use `import corequarry` immediately after building. Python wrapper files are
+updated on subsequent builds even when the extension does not need recompiling.
+The build-tree extension loads IB's libraries from the build tree.
+
+An extension named `_core.cpython-314-darwin.so` requires Python 3.14. If you
+select a different interpreter, reconfigure and rebuild with that interpreter.
+For scripts elsewhere, install with pip as above or add the absolute `build`
+directory to `PYTHONPATH`.
+
+You can also stage a CMake installation into a local directory:
+
+```sh
+cmake --install build --component python --prefix "$PWD/python-install"
+PYTHONPATH="$PWD/python-install" python -c 'import corequarry'
+```
+
+The installed package contains the IB libraries under `corequarry/lib` and
+can be used independently of the build tree.
+
 ## Append files
 
 ```python

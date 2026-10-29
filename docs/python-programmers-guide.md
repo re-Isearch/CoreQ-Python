@@ -127,13 +127,14 @@ Pass `str(path)` to native-facing constructors such as `IDB`, `VIDB` and `RECORD
 
 ```python
 stats = cq.index_files(
-    "MYINDEX", ["part-1.ndjson", "part-2.ndjson"],
+    "NEWINDEX", ["part-1.ndjson", "part-2.ndjson"],
     doctype="NDJSON", merge=cq.Merge.ZIP,
 )
 print(stats.records_added, stats.total_records, stats.total_words)
 ```
 
-This fragment expects the two named files to exist. `index_file()` accepts one
+This fragment expects the two named files to exist and uses a fresh `NEWINDEX`
+database stem. `index_file()` accepts one
 file and the same options. `index_files()` queues the files and indexes the batch
 once. One input file can contain many records; the document handler defines the
 record boundaries, fields and text processing.

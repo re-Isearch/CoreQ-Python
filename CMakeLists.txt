@@ -30,6 +30,26 @@ add_subdirectory("${COREQUARRY_IB_SOURCE_DIR}" "${CMAKE_CURRENT_BINARY_DIR}/ib" 
 
 nanobind_add_module(_core NB_STATIC bindings/core.cxx)
 target_compile_features(_core PRIVATE cxx_std_17)
+
+# Keep the extension and Python wrapper together for imports from the build tree.
+# Copy on every build so Python-only edits do not require relinking the extension.
+set(_python_package_dir "${CMAKE_CURRENT_BINARY_DIR}/corequarry")
+add_custom_target(corequarry_python_files
+    COMMAND "${CMAKE_COMMAND}" -E make_directory "${_python_package_dir}"
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/corequarry/__init__.py"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/corequarry/_core.pyi"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/corequarry/py.typed"
+        "${_python_package_dir}"
+    VERBATIM)
+add_dependencies(_core corequarry_python_files)
+set_target_properties(_core PROPERTIES LIBRARY_OUTPUT_DIRECTORY "${_python_package_dir}")
+foreach(_config IN LISTS CMAKE_CONFIGURATION_TYPES)
+    string(TOUPPER "${_config}" _config_upper)
+    set_target_properties(_core PROPERTIES
+        "LIBRARY_OUTPUT_DIRECTORY_${_config_upper}" "${_python_package_dir}")
+endforeach()
+
 # IB currently supplies ABI definitions at directory scope rather than through
 # exported SDK targets. Consume that exact configuration, including index widths.
 get_directory_property(_ib_definitions DIRECTORY "${COREQUARRY_IB_SOURCE_DIR}" COMPILE_DEFINITIONS)

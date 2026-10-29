@@ -1,0 +1,2 @@
+cmake --install . --component python --prefix "$PWD/python"
+PYTHONPATH="$PWD/python" python3.14 ./test.py

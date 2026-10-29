@@ -1,0 +1,24 @@
+[build-system]
+requires = ["scikit-build-core>=1.0,<2", "nanobind>=3.1,<4"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "corequarry"
+version = "0.1.0a1"
+description = "Optional Python bindings for the CoreQuarry IB search engine"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[tool.scikit-build]
+cmake.version = ">=3.24"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["src/corequarry"]
+install.components = ["python"]
+sdist.exclude = ["build", "dist", ".pytest_cache"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

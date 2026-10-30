@@ -470,7 +470,8 @@ NB_MODULE(_core, m) {
         .def("get_display_evidence", [](const Result& r, size_t max) { return r.value.GetDisplayEvidence(max,doctype(r)); }, "max_bytes"_a = 130)
         .def("evidence", [](const Result& r, size_t max, const STRING& before, const STRING& after) {
             STRING text, field;
-            if (!r.value.PresentBestDisplayEvidence(max,&text,nullptr,before,after,doctype(r),&field))
+            DISPLAY_MARKER markers{before, after, STRING(), STRING()};
+            if (!r.value.PresentBestDisplayEvidence(max,markers,&text,doctype(r),&field))
                 throw std::runtime_error("Cannot present display evidence");
             return nb::make_tuple(text,field);
         }, "max_bytes"_a = 130, "before"_a = STRING("**"), "after"_a = STRING("**"))

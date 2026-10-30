@@ -8,6 +8,19 @@ This first prototype covers file ingestion and search. It exposes
 IDB, VIDB, SQUERY, QUERY, IRSET, IRESULT, RSET, RESULT, MDT, MDTREC, RECORD and
 the term, attribute, operator, datatype and span types needed to use them.
 
+## Python documentation
+
+- [Programmer's guide](docs/python-programmers-guide.md): indexing, query construction,
+  paging, evidence, metadata, lifetimes, federation and service use.
+- [API reference](docs/python-api-reference.md): bound methods, parameters, enums
+  and indexing/coordinate conventions.
+- [Runnable tour](examples/python_tour.py): after installing, run
+  `python examples/python_tour.py` to create and search a temporary example index.
+- [FastMCP demo](docs/mcp-demo.md): a runnable server and client for search,
+  evidence, source retrieval and operator discovery.
+- [Known issues](docs/known-issues.md): includes an append replay observed
+  in the tested native build.
+
 ## Build
 
 Use Python 3.10 or newer, a C++17 compiler, CMake and GNU dbm development files.
@@ -166,12 +179,12 @@ The integration tests create real indexes, append documents, execute parsed and
 programmatic queries, inspect evidence and metadata, and exercise result
 lifetimes across subsequent searches and handle closure.
 
-The prototype was built on Linux x86_64 with CPython 3.12 and the engine revision
-above plus the companion patch. All 17 tests passed from a separately installed
-wheel, including typed NDJSON search, exact PEER bounds, metadata copies, result
-lifetimes, append behavior, and evidence from two federated volumes. The installed
-extension resolved its IB libraries from inside the package. macOS and optional
-vector builds have not yet been validated.
+The documentation examples were run on Linux x86_64 with CPython 3.12 and IB
+`7726ce2` plus Linux build fixes. The runnable tour and the programmer's guide's
+Python examples passed. The evidence-marker regression test passes; the append
+integration test reproduced the input replay described in
+[known issues](docs/known-issues.md). macOS and optional vector builds have not
+yet been validated.
 
 Type stubs and a `py.typed` marker are included for application development.
 # CoreQ-Python

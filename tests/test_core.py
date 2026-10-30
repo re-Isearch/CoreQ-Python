@@ -105,6 +105,23 @@ def test_typed_field_query_against_real_index(tmp_path):
         assert len(db.search(predicate)) == 1
 
 
+def test_evidence_honors_markers_and_returns_container(tmp_path):
+    path = tmp_path / "evidence.ndjson"
+    path.write_text('{"body":"A virus vaccine study."}\n')
+    name = tmp_path / "evidence-db"
+    cq.index_file(name, path, doctype="NDJSON", memory_mb=32)
+    with cq.VIDB(os.fspath(name)) as db:
+        row = db.search(cq.SQUERY.term("virus", field="BODY")).get_rset(1)[0]
+        marked, field = row.evidence(before="<hit>", after="</hit>")
+        assert field == "BODY"
+        assert "<hit>virus</hit>" in marked
+        assert "\x1b" not in marked
+        plain, field = row.evidence(before="", after="")
+        assert field == "BODY"
+        assert "virus" in plain and "\x1b" not in plain
+        assert "<hit>" not in plain and "**" not in plain
+
+
 def test_materialization_limit_and_indexing(corpus):
     name, _ = corpus
     with cq.VIDB(os.fspath(name)) as db:

@@ -16,6 +16,8 @@ the term, attribute, operator, datatype and span types needed to use them.
   and indexing/coordinate conventions.
 - [Runnable tour](examples/python_tour.py): after installing, run
   `python examples/python_tour.py` to create and search a temporary example index.
+- [FastMCP demo](docs/mcp-demo.md): a runnable server and client for search,
+  evidence, source retrieval and operator discovery.
 - [Known issues](docs/known-issues.md): includes an append replay observed
   in the tested native build.
 

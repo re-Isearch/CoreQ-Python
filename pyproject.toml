@@ -12,6 +12,7 @@ license = "Apache-2.0"
 
 [project.optional-dependencies]
 test = ["pytest>=8"]
+mcp = ["fastmcp>=4.1.4,<5"]
 
 [tool.scikit-build]
 cmake.version = ">=3.24"

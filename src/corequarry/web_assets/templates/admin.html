@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Search administration · CoreQuarry{% endblock %}
+{% block content %}<main class="document"><p class="eyebrow">ADMINISTRATION</p><h1>Search activity</h1>
+  <div class="table-wrap"><table><thead><tr><th>Status</th><th>Query</th><th>Collections</th><th>Results</th></tr></thead><tbody>
+  {% for job in jobs %}<tr><td>{{job.status}}</td><td><code>{{job.query}}</code></td><td>{{job.collections|join(', ')}}</td><td>{% if job.search_id %}<a href="/admin/search/{{job.search_id}}">Inspect</a>{% else %}{{job.error or '—'}}{% endif %}</td></tr>{% endfor %}
+  </tbody></table></div>
+  <h2>Recent impressions and clicks</h2><p class="muted">The log includes the displayed order, scores, query and scoring configuration.</p>
+  {% for event in events %}<details class="event"><summary>{{event[1]}} · {{event[2]}}</summary><pre>{{event[3]}}</pre></details>{% endfor %}
+</main>{% endblock %}

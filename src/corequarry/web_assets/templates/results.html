@@ -1,0 +1,18 @@
+<div class="results" data-search-id="{{page.search_id}}" data-start="{{page.start}}">
+  <script type="application/json" id="search-recipe">{{{"query":page.query,"collections":page.collections,"syntax":page.syntax,"field":page.field,"normalization":page.normalization}|tojson}}</script>
+  <div class="result-summary"><h2>{{"{:,}".format(page.total_found)}} <span>matches</span></h2><span>{{"%.1f"|format(page.elapsed_ms)}} ms · {{page.normalization|upper}}</span></div>
+  <details class="query-details"><summary>Evaluated query</summary><code>{{page.query_rpn}}</code></details>
+  {% for row in page.results %}
+  <article class="result" data-result-id="{{row.result_id}}">
+    <div class="result-kicker"><span>{{row.rank}}</span><span>{{row.doctype}}</span><span>Score {{"%.4g"|format(row.score) if row.score is not none else "—"}}</span></div>
+    <h3><a href="/record/{{row.result_id}}" data-result-id="{{row.result_id}}">{{row.headline or row.key}}</a></h3>
+    {% if row.evidence %}<div class="evidence"><span class="field-tag">{{row.evidence.field or "TEXT"}}</span><p>{{row.evidence.text|evidence}}</p></div>{% endif %}
+    <div class="result-meta"><span>{{row.key}}</span><span>{{row.hit_count}} hits</span>{% if row.date %}<span>{{row.date}}</span>{% endif %}</div>
+  </article>
+  {% else %}<div class="empty-state"><h2>No matches on this page.</h2><p>Adjust the expression or choose another collection.</p></div>{% endfor %}
+  <nav class="pagination" aria-label="Result pages">
+    {% if page.previous_start is not none %}<a href="/?sid={{page.search_id}}&start={{page.previous_start}}" hx-get="/search/{{page.search_id}}?start={{page.previous_start}}&limit={{page.limit}}" hx-target="#workspace">← Previous</a>{% else %}<span></span>{% endif %}
+    <span>{% if page.returned %}{{page.start+1}}–{{page.start+page.returned}} of {{"{:,}".format(page.total_found)}}{% else %}0 displayed{% endif %}</span>
+    {% if page.next_start is not none %}<a href="/?sid={{page.search_id}}&start={{page.next_start}}" hx-get="/search/{{page.search_id}}?start={{page.next_start}}&limit={{page.limit}}" hx-target="#workspace">Next →</a>{% else %}<span></span>{% endif %}
+  </nav>
+</div>

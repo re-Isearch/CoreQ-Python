@@ -18,6 +18,8 @@ the term, attribute, operator, datatype and span types needed to use them.
   `python examples/python_tour.py` to create and search a temporary example index.
 - [FastMCP demo](docs/mcp-demo.md): a runnable server and client for search,
   evidence, source retrieval and operator discovery.
+- [Web interface](docs/web-demo.md): collection selection, field Scan autocomplete,
+  retained searches, evidence, paging, retrieval and an optional admin view.
 - [Known issues](docs/known-issues.md): includes an append replay observed
   in the tested native build.
 
@@ -29,6 +31,7 @@ Nanobind and scikit-build-core are supplied by Python build isolation.
 ```sh
 python -m pip install . -Ccmake.define.COREQUARRY_IB_SOURCE_DIR=/path/to/ib
 ```
+
 The binding consumes IB's compiler definitions so its public types match the
 engine. `BUILD_LARGE_INDEX` defaults to ON. Set it explicitly to match the indexes
 you use. `gptype_bits` and `index_id_bits` expose the resulting widths.
@@ -38,6 +41,18 @@ Enable `BUILD_VECTOR_INDEX` and supply IB's Schmate settings for vector support.
 The extension and engine component libraries are installed inside the Python
 package. GNU dbm remains a required platform library. Public wheel distribution
 will also require platform-specific dependency repair.
+
+## Try the web interface
+
+```sh
+python -m pip install '.[web]' -Ccmake.define.COREQUARRY_IB_SOURCE_DIR=/path/to/ib
+python examples/make_web_demo.py web-demo
+python examples/web_server.py web-demo/catalog --state-dir web-demo/state
+```
+
+Open `http://127.0.0.1:8000`. The sample contains synthetic research notes and
+technical briefs. To use real indexes, point collection INI files at their database
+stems; see the [configuration and session guide](docs/web-demo.md).
 
 ## Append files
 

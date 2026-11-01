@@ -71,6 +71,9 @@ search(query: QUERY) -> IRSET
 search(query: SQUERY, sort=SortBy.SCORE,
        normalization=Normalization.DEFAULT) -> IRSET
 search_smart(query: QUERY, default_field="") -> tuple[IRSET, QUERY]
+fields() -> list[dict]
+scan(field="", term="", limit=20) -> list[dict]
+load_results(path) -> IRSET
 get_mdt(volume=1) -> MDT
 headline(result, /) -> str
 summary(result, /) -> str
@@ -85,6 +88,15 @@ live dependent sets/rows/metadata views through that handle. A closed handle
 rejects database operations; retained results/views keep native resources alive.
 
 `get_mdt()` uses one-based volume numbers. IDB accepts only volume 1.
+
+`fields()` returns copied `name`/`datatype` dictionaries. `scan()` delegates to
+native Scan and returns `term`/`frequency` dictionaries, capped at 0–1000 items;
+zero returns none. Native Scan does not scan an empty term. Frequencies are native
+counts. For autocomplete prefix semantics the service filters the bounded output.
+
+`load_results()` restores a trusted file written by `IRSET.save()`. It checks the
+database stem, modification stamp, record/word counts, IB revision and index ABI,
+and retains the receiving database. See [saved-set details](web-demo.md#additional-binding-methods).
 `headline`, `summary` and `get_field_data` use the document handlers; supply a
 result produced by this database. `GetVersionID` and `SetLocale` retain their
 native spellings. Choose locale consistently with the indexed data.
@@ -171,6 +183,7 @@ negative indexes. Indexing returns an owned `IRESULT` value.
 
 ```text
 copy() -> IRSET
+save(path) -> None
 sort_by(sort, /) -> None
 normalize(method, weight=1.0) -> None
 get_rset(total=None, start=0) -> RSET

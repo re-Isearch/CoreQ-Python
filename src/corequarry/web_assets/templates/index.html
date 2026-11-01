@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block scripts %}<script src="/static/app.js" defer></script>{% endblock %}
+{% block content %}
+<form id="search-form" class="layout">
+  <aside>
+    <p class="eyebrow">SEARCH SCOPE</p><h2>Collections</h2>
+    <p class="muted">Choose one or combine several.</p>
+    {% for collection in collections %}
+    <label class="collection-card"><input class="collection-choice" type="checkbox" name="collection" value="{{collection.id}}" {% if loop.first %}checked{% endif %}>
+      <span><strong>{{collection.title}}</strong><small>{{collection.description or collection.id}}</small></span></label>
+    {% endfor %}
+    <div class="scope-note"><span class="status-dot"></span><span id="scope-status">Loading fields…</span></div>
+  </aside>
+  <main>
+    <div class="intro"><p class="eyebrow">EXPLORE THE EVIDENCE</p><h1>Find the words.<br><span>Follow the context.</span></h1></div>
+    <section class="search-box" aria-label="Search controls">
+      <label for="query">Your query</label>
+      <div class="query-row"><input id="query" name="q" type="search" list="suggestions" autocomplete="off" placeholder="virus vaccine PEER:130" required
+        hx-get="/suggestions" hx-trigger="input changed delay:200ms, field-change" hx-target="#suggestions" hx-include="#search-form" hx-sync="this:replace">
+        <datalist id="suggestions"></datalist><button id="search-button" type="submit">Search <span aria-hidden="true">↗</span></button></div>
+      <div class="controls">
+        <label>Within field<select id="field" name="field"><option value="">All fields</option></select></label>
+        <label>Query syntax<select id="syntax" name="syntax"><option value="rpn">RPN</option><option value="infix">Infix</option><option value="words">Words</option></select></label>
+        <label>Normalization<select id="normalization" name="normalization"><option value="default">Default (L2)</option><option value="e2">E2</option><option value="bm25">BM25</option></select></label>
+      </div>
+      <p class="query-help">Try <button type="button" class="example" data-query="virus vaccine PEER:130">virus vaccine PEER:130</button> or <button type="button" class="example" data-query="virus vaccine AND">virus vaccine AND</button></p>
+    </section>
+    <div id="activity" role="status" aria-live="polite"></div>
+    <section id="workspace" aria-label="Search results"><div class="empty-state"><span class="empty-symbol" aria-hidden="true">⌕</span><h2>A collection of possibilities.</h2><p>Select your scope and enter a query.<br>Results include the source evidence behind each match.</p></div></section>
+  </main>
+</form>
+{% endblock %}

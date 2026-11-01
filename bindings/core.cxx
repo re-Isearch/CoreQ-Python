@@ -9,11 +9,13 @@
 #include <type_traits>
 #include <cstring>
 #include <limits>
+#include <cstdio>
 #include "idb.hxx"
 #include "vidb.hxx"
 #include "sterm.hxx"
 #include "operator.hxx"
 #include "doctype.hxx"
+#include "scan.hxx"
 
 namespace nb = nanobind;
 using namespace nb::literals;
@@ -217,6 +219,74 @@ template <class T> void bind_database(nb::module_& m, const char *name, bool sea
             if (!result) throw std::runtime_error("IB smart search failed");
             return nb::make_tuple(Matches{db.owner(), std::move(result)}, request);
         }, "query"_a, "default_field"_a = STRING())
+        .def("fields", [](D& db) {
+            DFDT fields;
+            db.get().GetDfdt(&fields);
+            nb::list output;
+            for (size_t i = 1; i <= fields.GetTotalEntries(); ++i) {
+                DFD field;
+                if (fields.GetEntry(i, &field)) {
+                    STRING name;
+                    field.GetFieldName(&name);
+                    nb::dict item;
+                    item["name"] = name;
+                    item["datatype"] = STRING(field.GetFieldType().c_str());
+                    output.append(item);
+                }
+            }
+            return output;
+        })
+        .def("scan", [](D& db, const STRING& field, const STRING& term, size_t limit) {
+            if (limit > 1000) throw nb::value_error("scan limit must be between 0 and 1000");
+            nb::list output;
+            if (!limit) return output;
+            SCANLIST list;
+            db.get().Scan(&list, field, term, static_cast<INT>(limit));
+            const auto *items = list.GetPtratomicSCANLIST();
+            for (const auto *p = items->Next(); p != items && output.size() < limit; p = p->Next()) {
+                nb::dict item;
+                item["term"] = p->Term();
+                item["frequency"] = p->Frequency();
+                output.append(item);
+            }
+            return output;
+        }, "field"_a = STRING(), "term"_a = STRING(), "limit"_a = 20)
+        .def("load_results", [](D& db, const STRING& path) {
+            checked_text(path, "A saved result-set filename is required");
+            std::unique_ptr<FILE, decltype(&std::fclose)> fp(path.Fopen("rb"), &std::fclose);
+            if (!fp) throw std::runtime_error("Cannot open saved results");
+            char magic[8];
+            if (std::fread(magic, 1, sizeof(magic), fp.get()) != sizeof(magic) ||
+                std::memcmp(magic, "CQPYRS1\n", sizeof(magic)))
+                throw std::runtime_error("Not a CoreQuarry Python saved result set");
+            UINT4 gp_bits = 0, index_bits = 0;
+            ::Read(&gp_bits, fp.get());
+            ::Read(&index_bits, fp.get());
+            STRING version, stem;
+            version.Read(fp.get());
+            stem.Read(fp.get());
+            UINT8 records = 0, words = 0;
+            ::Read(&records, fp.get());
+            ::Read(&words, fp.get());
+            SRCH_DATE modified;
+            modified.Read(fp.get());
+            if (std::ferror(fp.get()) || std::feof(fp.get()) ||
+                gp_bits != sizeof(GPTYPE)*8 || index_bits != sizeof(INDEX_ID)*8 ||
+                version != STRING(COREQUARRY_IB_REVISION) || stem != db.get().GetDbFileStem() ||
+                records != db.get().GetTotalRecords() || words != db.get().GetTotalWords() ||
+                modified != db.get().DateLastModified())
+                throw std::runtime_error("Saved results belong to another database, generation, or ABI");
+            // Validate the database generation above, not against the native
+            // payload's wall-clock timestamp: MDT and IRSET currently use
+            // different timezone conventions for that comparison.
+            auto result = std::make_unique<IRSET>(nullptr);
+            if (!result->Read(fp.get()))
+                throw std::runtime_error("Saved results are invalid or expired");
+            if (std::ferror(fp.get()) || std::feof(fp.get()))
+                throw std::runtime_error("Saved results are truncated or unreadable");
+            result->SetParent(&db.get());
+            return Matches{db.owner(), std::move(result)};
+        }, "path"_a)
         .def("get_mdt", [](D& db, size_t volume) {
             MDT *table;
             if constexpr (std::is_same_v<T, IDB>) {
@@ -489,6 +559,23 @@ NB_MODULE(_core, m) {
         .def("sort_by", [](Results& results, SortBy sort) { results.value->SortBy(sort); });
 
     auto matches = nb::class_<Matches>(m, "IRSET")
+        .def("save", [](const Matches& set, const STRING& path) {
+            checked_text(path, "A saved result-set filename is required");
+            FILE *fp = path.Fopen("wb");
+            if (!fp) throw std::runtime_error("Cannot create saved results");
+            std::fwrite("CQPYRS1\n", 1, 8, fp);
+            ::Write(static_cast<UINT4>(sizeof(GPTYPE)*8), fp);
+            ::Write(static_cast<UINT4>(sizeof(INDEX_ID)*8), fp);
+            STRING(COREQUARRY_IB_REVISION).Write(fp);
+            set.owner->GetDbFileStem().Write(fp);
+            ::Write(static_cast<UINT8>(set.owner->GetTotalRecords()), fp);
+            ::Write(static_cast<UINT8>(set.owner->GetTotalWords()), fp);
+            set.owner->DateLastModified().Write(fp);
+            set.value->Write(fp);
+            const bool failed = std::ferror(fp) != 0;
+            const int closed = std::fclose(fp);
+            if (failed || closed) throw std::runtime_error("Cannot write saved results");
+        }, "path"_a)
         .def("__len__", [](const Matches& set) { return set.value->GetTotalEntries(); })
         .def("__getitem__", [](const Matches& set, Py_ssize_t index) {
             const size_t offset = offset_index(index,set.value->GetTotalEntries());

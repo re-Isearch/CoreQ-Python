@@ -1,7 +1,7 @@
 # CoreQuarry FastMCP demo
 
 The [server](../examples/mcp_server.py) exposes one existing physical database or
-VIDB through the standalone `fastmcp` package. Its four read-only tools provide
+VIDB through the standalone `fastmcp` package. Its seven read-only tools provide
 search, evidence, source retrieval and operator discovery. The
 [client](../examples/mcp_client.py) starts the server, discovers its tools, runs a
 query and fetches the first matching record.
@@ -52,7 +52,7 @@ From the repository root:
 python examples/mcp_client.py /tmp/corequarry-mcp-demo/DEMO 'virus vaccine PEER:130'
 ```
 
-The client prints the four tool names, a structured search response and fetched
+The client prints the tool names, a structured search response and fetched
 source text. It launches the server with the same Python interpreter, preserving
 the environment, so the native module and FastMCP are available in the child.
 
@@ -93,7 +93,10 @@ deployment requires an application access policy and HTTP authentication.
 | Tool | Parameters | Returns |
 | --- | --- | --- |
 | `search` | `query`; `syntax="infix"` (`infix`, `rpn`, `words`); `start=0`; `limit=10` | Total matches, canonical RPN, page offsets, rows and evidence |
+| `page` | `search_id`; `start=0`; `limit=10` | A page from the evaluated query, without searching again |
 | `fetch` | `result_id`; optional `field`; `start=0`; `max_chars=4000` | Source record or named field, character count and next offset |
+| `fields` | None | Field names and native datatypes |
+| `scan` | Optional `field`; `prefix=""`; `limit=12` | Bounded term-prefix suggestions and native frequencies |
 | `operators` | None | Native operator names, arities, syntax and descriptions |
 | `database_info` | None | Record/word counts, volumes, engine identity and cache occupancy |
 
@@ -104,7 +107,7 @@ For example, call `search` with:
 ```
 
 `search` sorts by native score with the binding's default normalization. Its
-`limit` is between 1 and 50 and cannot exceed the configured cache capacity.
+`limit` is between 1 and 50.
 The native query still evaluates the complete match set. An empty page retains
 the correct `total_found`; `next_start` is null at the end.
 
@@ -134,11 +137,15 @@ tool errors, as do invalid query arguments.
 
 ## Lifetime and concurrency
 
-One search-only VIDB stays open for the server lifespan. Searches reuse its
-native caches. A bounded LRU cache retains up to 200 RESULT objects by default;
-change it with `--cache-size`. Search inserts returned rows and fetch refreshes
-their recency. IDs expire on eviction or shutdown. The cache belongs to the
-server process and is shared by its clients; it is not a persistent session store.
+The adapter uses the same `corequarry.service.SearchStore` as the web interface.
+It reuses the search-only VIDB and retains up to 200 evaluated searches by default;
+change that count with `--cache-size`. Search returns a `search_id`; use `page`
+with that ID to materialize another page without evaluating the query again.
+Native sets above the store's retention estimate spill to private temporary files.
+Page and fetch refresh recency. IDs expire after 15 idle minutes (checked on
+service access), eviction or shutdown. This demo's cache is shared by its MCP
+clients and is not an authenticated multi-user session store. The web adapter
+adds signed-cookie ownership around the same backend.
 
 Native tools run serially on the event-loop thread using FastMCP's
 `run_in_thread=False`. The current bindings hold the GIL; a threadpool would not
@@ -146,9 +153,9 @@ make native searches parallel. For concurrent searches, run separate processes
 that each open their own handles. Long calls block this demo's event loop, and a
 client timeout does not cancel native query execution.
 
-The demo does not automatically refresh readers after an external append. Reader
-refresh, persistent sets and worker scheduling belong to the application's
-session model. Shutdown clears retained results and closes the database handle.
+The demo does not automatically refresh readers after an external append.
+Shutdown clears retained results and closes the database handle. See the
+[web demo](web-demo.md) for process workers, collection selection and browser sessions.
 
 ## Verification
 
@@ -168,5 +175,6 @@ regression. The documented client example and local Streamable HTTP discovery,
 search and fetch also passed. The native test build used IB `7726ce2` with the
 Linux build fixes described in the programmer's guide; macOS was not tested.
 
-The demo uses the evidence-marker fix in the programmer-documentation branch.
-It does not change the native engine or the binding API.
+The demo uses the current evidence-marker/container wrapper and the field, Scan
+and saved-set bindings described in the [web service guide](web-demo.md).
+The native engine source is unchanged.

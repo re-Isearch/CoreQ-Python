@@ -52,3 +52,4 @@ install(TARGETS ${_ib_libraries} LIBRARY DESTINATION corequarry/lib COMPONENT py
 install(DIRECTORY src/corequarry/ DESTINATION corequarry COMPONENT python
     FILES_MATCHING PATTERN "*.py" PATTERN "*.pyi" PATTERN "py.typed"
     PATTERN "__pycache__" EXCLUDE)
+install(DIRECTORY src/corequarry/web_assets DESTINATION corequarry COMPONENT python)

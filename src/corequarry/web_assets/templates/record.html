@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{record.headline or record.key}} · CoreQuarry{% endblock %}
+{% block content %}<main class="document"><a class="back-link" href="/?sid={{record.search_id}}">← Back to results</a>
+  <p class="eyebrow">SOURCE RECORD</p><h1>{{record.headline or record.key}}</h1><p class="muted">{{record.key}} · Volume {{record.volume}}{% if record.field %} · {{record.field}}{% endif %}</p>
+  <form class="retrieval" method="get"><label>Retrieve a field<input name="field" placeholder="e.g. BODY" value="{{record.field or ''}}"></label><button type="submit">Retrieve</button><a href="/record/{{record.result_id}}">Full record</a></form>
+  <pre class="source">{{record.text}}</pre>
+  {% if record.next_start is not none %}<a href="?start={{record.next_start}}{% if record.field %}&field={{record.field|urlencode}}{% endif %}">Continue reading →</a>{% endif %}
+  <p class="muted">Characters {{record.start}}–{{record.start+record.text|length}} of {{record.total_chars}}</p>
+</main>{% endblock %}

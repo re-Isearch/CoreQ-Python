@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}Inspect search · CoreQuarry{% endblock %}
+{% block content %}<main class="document"><a href="/admin">← Administration</a><h1>Inspect search</h1><p>{{page.query_rpn}}</p>
+<p>{{page.total_found}} matches · {{"%.1f"|format(page.elapsed_ms)}} ms · {{page.collections|join(', ')}}</p>
+{% for row in page.results %}<article class="result"><h3>{{row.rank}}. {{row.headline or row.key}}</h3>{% if row.evidence %}<p>{{row.evidence.text|evidence}}</p>{% endif %}<code>{{row.key}} · {{row.score}}</code></article>{% endfor %}
+</main>{% endblock %}

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% block title %}CoreQuarry · Search{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/static/htmx.min.js" defer></script>
+  {% block scripts %}{% endblock %}
+</head>
+<body>
+  <header><a class="brand" href="/">CQ<span>CoreQuarry</span></a><span class="header-note">Search your collections</span></header>
+  {% block content %}{% endblock %}
+  <footer>CoreQuarry <span>Lexical · Structural · Typed</span></footer>
+</body></html>

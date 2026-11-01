@@ -40,7 +40,7 @@ def test_search_fetch_and_operator_discovery(database):
     async def check():
         async with Client(demo.create_server(str(database))) as client:
             tools = {tool.name for tool in await client.list_tools()}
-            assert tools == {"search", "fetch", "operators", "database_info"}
+            assert tools == {"search", "fetch", "operators", "database_info", "page", "fields", "scan"}
             info = (await client.call_tool("database_info")).data
             assert info["total_records"] == 3
             result = (await client.call_tool("search", {
@@ -48,6 +48,9 @@ def test_search_fetch_and_operator_discovery(database):
             })).data
             assert result["total_found"] == result["returned"] == 1
             row = result["results"][0]
+            repeated = (await client.call_tool("page", {"search_id": result["search_id"], "limit": 1})).data
+            assert repeated["results"][0]["result_id"] == row["result_id"]
+            assert (await client.call_tool("database_info")).data["evaluations"] == 1
             assert row["evidence"]["field"] == "BODY"
             assert "**virus**" in row["evidence"]["text"]
             assert "\x1b" not in row["evidence"]["text"]
@@ -107,17 +110,17 @@ def test_validation_and_cache_eviction(database):
             assert not (await client.call_tool("fetch", {"result_id": first})).is_error
             for arguments in ({"query": ""}, {"query": "virus", "limit": 0},
                               {"query": "virus", "syntax": "sql"},
-                              {"query": "virus", "limit": 3}):
+                              {"query": "virus", "limit": 51}):
                 assert (await client.call_tool("search", arguments, raise_on_error=False)).is_error
             missing = await client.call_tool("fetch", {
                 "result_id": first, "field": "DOES-NOT-EXIST",
             }, raise_on_error=False)
             assert missing.is_error
             info = (await client.call_tool("database_info")).data
-            assert info["cached_results"] == info["cache_capacity"] == 2
+            assert info["cached_searches"] == info["cache_capacity"] == 2
         # A new lifespan opens a fresh handle and starts without stale result IDs.
         async with Client(server) as client:
-            assert (await client.call_tool("database_info")).data["cached_results"] == 0
+            assert (await client.call_tool("database_info")).data["cached_searches"] == 0
             assert (await client.call_tool("fetch", {"result_id": first},
                                            raise_on_error=False)).is_error
     asyncio.run(check())
@@ -129,7 +132,7 @@ def test_stdio_subprocess(database):
             command=sys.executable, args=[str(SERVER), str(database)], env=dict(os.environ),
         )
         async with Client(transport) as client:
-            assert len(await client.list_tools()) == 4
+            assert len(await client.list_tools()) == 7
             result = await client.call_tool("search", {
                 "query": "virus vaccine PEER:130", "syntax": "rpn", "limit": 1,
             })
